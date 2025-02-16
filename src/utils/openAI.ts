@@ -1,45 +1,27 @@
-import { GoogleGenerativeAI } from '@fuyun/generative-ai'
+import os
+import google.generativeai as genai
 
-const apiKey = (import.meta.env.GEMINI_API_KEY)
-const apiBaseUrl = (import.meta.env.API_BASE_URL)?.trim().replace(/\/$/, '')
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
-const genAI = apiBaseUrl
-  ? new GoogleGenerativeAI(apiKey, apiBaseUrl)
-  : new GoogleGenerativeAI(apiKey)
-
-export const startChatAndSendMessageStream = async(history: ChatMessage[], newMessage: string) => {
-  const model = genAI.getGenerativeModel({ model_name: 'gemini-2.0-flash-thinking-exp-01-21' })
-
-  const chat = model.startChat({
-    history: history.map(msg => ({
-      role: msg.role,
-      parts: msg.parts.map(part => part.text).join(''), // Join parts into a single string
-    })),
-    generationConfig: {
-      maxOutputTokens: 65536,
-    },
-    safetySettings: [
-      {category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE'},
-      {category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE'},
-      {category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE'},
-      {category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE'}
-      ],
-  })
-
-  // Use sendMessageStream for streaming responses
-  const result = await chat.sendMessageStream(newMessage)
-
-  const encodedStream = new ReadableStream({
-    async start(controller) {
-      const encoder = new TextEncoder()
-      for await (const chunk of result.stream) {
-        const text = await chunk.text()
-        const encoded = encoder.encode(text)
-        controller.enqueue(encoded)
-      }
-      controller.close()
-    },
-  })
-
-  return encodedStream
+# Create the model
+generation_config = {
+  "temperature": 0.7,
+  "top_p": 0.95,
+  "top_k": 64,
+  "max_output_tokens": 65536,
+  "response_mime_type": "text/plain",
 }
+
+model = genai.GenerativeModel(
+  model_name="gemini-2.0-flash-thinking-exp-01-21",
+  generation_config=generation_config,
+)
+
+chat_session = model.start_chat(
+  history=[
+  ]
+)
+
+response = chat_session.send_message("INSERT_INPUT_HERE")
+
+print(response.text)
