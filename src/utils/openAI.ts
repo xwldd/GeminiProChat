@@ -3,25 +3,39 @@ import google.generativeai as genai
 
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
-# Create the model
-generation_config = {
-  "temperature": 0.7,
-  "top_p": 0.95,
-  "top_k": 64,
-  "max_output_tokens": 65536,
-  "response_mime_type": "text/plain",
+export const startChatAndSendMessageStream = async(history: ChatMessage[], newMessage: string) => {
+  const model = genAI.getGenerativeModel({ model_name: 'gemini-2.0-flash-thinking-exp-01-21' })
+
+  const chat = model.startChat({
+    history: history.map(msg => ({
+      role: msg.role,
+      parts: msg.parts.map(part => part.text).join(''), // Join parts into a single string
+    })),
+    generationConfig: {
+      maxOutputTokens: 65536,
+    },
+    safetySettings: [
+      {category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE'},
+      {category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE'},
+      {category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE'},
+      {category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE'}
+      ],
+  })
+
+  // Use sendMessageStream for streaming responses
+  const result = await chat.sendMessageStream(newMessage)
+
+  const encodedStream = new ReadableStream({
+    async start(controller) {
+      const encoder = new TextEncoder()
+      for await (const chunk of result.stream) {
+        const text = await chunk.text()
+        const encoded = encoder.encode(text)
+        controller.enqueue(encoded)
+      }
+      controller.close()
+    },
+  })
+
+  return encodedStream
 }
-
-model = genai.GenerativeModel(
-  model_name="gemini-2.0-flash-thinking-exp-01-21",
-  generation_config=generation_config,
-)
-
-chat_session = model.start_chat(
-  history=[
-  ]
-)
-
-response = chat_session.send_message("INSERT_INPUT_HERE")
-
-print(response.text)
