@@ -4,7 +4,7 @@ import google.generativeai as genai
 genai.configure(api_key=os.environ["GEMINI_API_KEY"])
 
 export const startChatAndSendMessageStream = async(history: ChatMessage[], newMessage: string) => {
-  const model = genAI.getGenerativeModel({ model_name: 'gemini-2.0-flash-thinking-exp-01-21' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-thinking-exp-01-21' })
 
   const chat = model.startChat({
     history: history.map(msg => ({
