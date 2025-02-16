@@ -1,10 +1,14 @@
-import os
-import google.generativeai as genai
+import { GoogleGenerativeAI } from '@fuyun/generative-ai'
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+const apiKey = (import.meta.env.GEMINI_API_KEY)
+const apiBaseUrl = (import.meta.env.API_BASE_URL)?.trim().replace(/\/$/, '')
+
+const genAI = apiBaseUrl
+  ? new GoogleGenerativeAI(apiKey, apiBaseUrl)
+  : new GoogleGenerativeAI(apiKey)
 
 export const startChatAndSendMessageStream = async(history: ChatMessage[], newMessage: string) => {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-thinking-exp-01-21' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-pro' })
 
   const chat = model.startChat({
     history: history.map(msg => ({
@@ -12,7 +16,7 @@ export const startChatAndSendMessageStream = async(history: ChatMessage[], newMe
       parts: msg.parts.map(part => part.text).join(''), // Join parts into a single string
     })),
     generationConfig: {
-      maxOutputTokens: 65536,
+      maxOutputTokens: 8000,
     },
     safetySettings: [
       {category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE'},
